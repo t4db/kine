@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	kserver "github.com/k3s-io/kine/pkg/server"
 	"github.com/makhov/strata"
+	"github.com/sirupsen/logrus"
 )
 
 // backend implements kine's server.Backend using a *strata.Node.
@@ -15,7 +17,31 @@ type backend struct {
 	node *strata.Node
 }
 
-func (b *backend) Start(_ context.Context) error { return nil }
+// Start blocks until the strata node is ready to serve writes, retrying
+// with backoff for up to 60 seconds. This guards against kine's health-check
+// write firing before a large S3 checkpoint restore has finished.
+func (b *backend) Start(ctx context.Context) error {
+	const (
+		retryInterval = 500 * time.Millisecond
+		retryTimeout  = 60 * time.Second
+	)
+	deadline := time.Now().Add(retryTimeout)
+	for {
+		_, err := b.node.Create(ctx, "/kine/ready", []byte("1"), 0)
+		if err == nil || err == strata.ErrKeyExists {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("strata: backend not ready after %s: %w", retryTimeout, err)
+		}
+		logrus.Warnf("strata: backend not yet ready (%v), retrying...", err)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(retryInterval):
+		}
+	}
+}
 
 func (b *backend) CurrentRevision(_ context.Context) (int64, error) {
 	return b.node.CurrentRevision(), nil

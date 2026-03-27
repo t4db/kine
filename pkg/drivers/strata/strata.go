@@ -14,8 +14,15 @@
 //	data-dir            Local storage directory (default: /var/lib/strata)
 //	node-id             Stable unique node ID (default: hostname)
 //	peer-listen         gRPC listen address for WAL streaming, e.g. 0.0.0.0:2380
-//	                    Required to enable multi-node mode.
-//	advertise-peer      Advertised peer address (default: peer-listen value)
+//	                    Required to enable multi-node mode (set automatically
+//	                    when service-name is provided).
+//	advertise-peer      Advertised peer address (default: peer-listen value).
+//	                    Set automatically when service-name is provided.
+//	peer-port           Peer gRPC port used by service-name auto-config (default: 2380)
+//	service-name        Kubernetes headless service name. When set, enables
+//	                    multi-node mode automatically: peer-listen is set to
+//	                    0.0.0.0:<peer-port> and advertise-peer is set to
+//	                    <hostname>.<service-name>:<peer-port>.
 //	s3-endpoint         Custom S3 endpoint URL (MinIO, Ceph, etc.)
 //	region              AWS region (default: us-east-1)
 //	checkpoint-interval Checkpoint write interval, e.g. 15m (default: 15m)
@@ -52,6 +59,7 @@ import (
 	kserver "github.com/k3s-io/kine/pkg/server"
 	"github.com/makhov/strata"
 	straobj "github.com/makhov/strata/pkg/object"
+	"os"
 )
 
 func init() {
@@ -108,6 +116,26 @@ func parseConfig(ctx context.Context, dsn string) (*strata.Config, error) {
 	if v := q.Get("node-id"); v != "" {
 		cfg.NodeID = v
 	}
+
+	peerPort := q.Get("peer-port")
+	if peerPort == "" {
+		peerPort = "2380"
+	}
+
+	// service-name enables multi-node mode without manual peer address
+	// configuration. When set, peer-listen defaults to 0.0.0.0:<peer-port>
+	// and advertise-peer defaults to <hostname>.<service-name>:<peer-port>,
+	// which is the stable DNS name assigned by a Kubernetes headless service.
+	// Both can still be overridden explicitly via peer-listen / advertise-peer.
+	if svc := q.Get("service-name"); svc != "" && q.Get("peer-listen") == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return nil, fmt.Errorf("resolve hostname for advertise-peer: %w", err)
+		}
+		cfg.PeerListenAddr = "0.0.0.0:" + peerPort
+		cfg.AdvertisePeerAddr = hostname + "." + svc + ":" + peerPort
+	}
+
 	if v := q.Get("peer-listen"); v != "" {
 		cfg.PeerListenAddr = v
 		cfg.AdvertisePeerAddr = v // default; may be overridden below

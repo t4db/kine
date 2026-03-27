@@ -19,8 +19,10 @@ When `bucket` is omitted the node runs in local-only mode (no S3 durability).
 |---|---|---|
 | `data-dir` | `/var/lib/strata` | Local directory for the Pebble database and WAL segments. |
 | `node-id` | hostname | Stable unique identifier for this node. Must be consistent across restarts. |
-| `peer-listen` | — | gRPC listen address for WAL streaming, e.g. `0.0.0.0:2380`. Required to enable multi-node mode. |
-| `advertise-peer` | `peer-listen` value | Address that other nodes use to reach this node's peer server. Set this when `peer-listen` binds `0.0.0.0`. |
+| `peer-listen` | — | gRPC listen address for WAL streaming, e.g. `0.0.0.0:2380`. Required to enable multi-node mode (set automatically when `service-name` is provided). |
+| `advertise-peer` | `peer-listen` value | Address that other nodes use to reach this node's peer server. Set this when `peer-listen` binds `0.0.0.0` (set automatically when `service-name` is provided). |
+| `peer-port` | `2380` | Peer gRPC port used by `service-name` auto-config. |
+| `service-name` | — | Kubernetes headless service name. When set, enables multi-node mode automatically: `peer-listen` is set to `0.0.0.0:<peer-port>` and `advertise-peer` is set to `<hostname>.<service-name>:<peer-port>`. |
 | `s3-endpoint` | — | Custom S3-compatible endpoint URL (MinIO, Ceph, etc.). Enables path-style requests automatically. |
 | `region` | `us-east-1` | AWS region. |
 | `checkpoint-interval` | `15m` | How often the leader writes a full checkpoint to S3. |
@@ -44,7 +46,14 @@ strata://my-bucket/k3s?data-dir=/var/lib/strata
 strata://my-bucket/k3s?data-dir=/var/lib/strata&s3-endpoint=http://minio:9000&region=us-east-1
 ```
 
-**Three-node cluster:**
+**Three-node cluster on Kubernetes (recommended):**
+```
+strata://my-bucket/k3s?data-dir=/var/lib/strata&service-name=kine.kube-system
+```
+
+`node-id` defaults to the pod hostname, and `peer-listen` / `advertise-peer` are derived from `service-name` automatically. All three nodes use the same DSN — no per-node configuration needed.
+
+**Three-node cluster (manual peer config):**
 ```
 # node-a
 strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-a&peer-listen=0.0.0.0:2380&advertise-peer=node-a.internal:2380
