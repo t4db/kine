@@ -19,10 +19,12 @@
 //	advertise-peer      Advertised peer address (default: peer-listen value).
 //	                    Set automatically when service-name is provided.
 //	peer-port           Peer gRPC port used by service-name auto-config (default: 3380)
-//	service-name        Kubernetes headless service name. When set, enables
+//	service-name        Kubernetes headless service FQDN. When set, enables
 //	                    multi-node mode automatically: peer-listen is set to
 //	                    0.0.0.0:<peer-port> and advertise-peer is set to
 //	                    <hostname>.<service-name>:<peer-port>.
+//	                    Must be fully-qualified (e.g. svc.default.svc.cluster.local)
+//	                    — gRPC does not expand DNS search domains.
 //	s3-endpoint         Custom S3 endpoint URL (MinIO, Ceph, etc.)
 //	region              AWS region (default: us-east-1)
 //	checkpoint-interval Checkpoint write interval, e.g. 15m (default: 15m)

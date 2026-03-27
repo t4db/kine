@@ -22,7 +22,7 @@ When `bucket` is omitted the node runs in local-only mode (no S3 durability).
 | `peer-listen` | — | gRPC listen address for WAL streaming, e.g. `0.0.0.0:3380`. Required to enable multi-node mode (set automatically when `service-name` is provided). |
 | `advertise-peer` | `peer-listen` value | Address that other nodes use to reach this node's peer server. Set this when `peer-listen` binds `0.0.0.0` (set automatically when `service-name` is provided). |
 | `peer-port` | `3380` | Peer gRPC port used by `service-name` auto-config. |
-| `service-name` | — | Kubernetes headless service name. When set, enables multi-node mode automatically: `peer-listen` is set to `0.0.0.0:<peer-port>` and `advertise-peer` is set to `<hostname>.<service-name>:<peer-port>`. |
+| `service-name` | — | Kubernetes headless service FQDN. When set, enables multi-node mode automatically: `peer-listen` is set to `0.0.0.0:<peer-port>` and `advertise-peer` is set to `<hostname>.<service-name>:<peer-port>`. Must be a fully-qualified domain name (e.g. `kine.default.svc.cluster.local`) — gRPC does not use DNS search domains. |
 | `s3-endpoint` | — | Custom S3-compatible endpoint URL (MinIO, Ceph, etc.). Enables path-style requests automatically. |
 | `region` | `us-east-1` | AWS region. |
 | `checkpoint-interval` | `15m` | How often the leader writes a full checkpoint to S3. |
@@ -48,7 +48,7 @@ strata://my-bucket/k3s?data-dir=/var/lib/strata&s3-endpoint=http://minio:9000&re
 
 **Three-node cluster on Kubernetes (recommended):**
 ```
-strata://my-bucket/k3s?data-dir=/var/lib/strata&service-name=kine.kube-system
+strata://my-bucket/k3s?data-dir=/var/lib/strata&service-name=kine.kube-system.svc.cluster.local
 ```
 
 `node-id` defaults to the pod hostname, and `peer-listen` / `advertise-peer` are derived from `service-name` automatically. All three nodes use the same DSN — no per-node configuration needed.
