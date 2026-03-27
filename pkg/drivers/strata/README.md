@@ -19,9 +19,9 @@ When `bucket` is omitted the node runs in local-only mode (no S3 durability).
 |---|---|---|
 | `data-dir` | `/var/lib/strata` | Local directory for the Pebble database and WAL segments. |
 | `node-id` | hostname | Stable unique identifier for this node. Must be consistent across restarts. |
-| `peer-listen` | — | gRPC listen address for WAL streaming, e.g. `0.0.0.0:2380`. Required to enable multi-node mode (set automatically when `service-name` is provided). |
+| `peer-listen` | — | gRPC listen address for WAL streaming, e.g. `0.0.0.0:3380`. Required to enable multi-node mode (set automatically when `service-name` is provided). |
 | `advertise-peer` | `peer-listen` value | Address that other nodes use to reach this node's peer server. Set this when `peer-listen` binds `0.0.0.0` (set automatically when `service-name` is provided). |
-| `peer-port` | `2380` | Peer gRPC port used by `service-name` auto-config. |
+| `peer-port` | `3380` | Peer gRPC port used by `service-name` auto-config. |
 | `service-name` | — | Kubernetes headless service name. When set, enables multi-node mode automatically: `peer-listen` is set to `0.0.0.0:<peer-port>` and `advertise-peer` is set to `<hostname>.<service-name>:<peer-port>`. |
 | `s3-endpoint` | — | Custom S3-compatible endpoint URL (MinIO, Ceph, etc.). Enables path-style requests automatically. |
 | `region` | `us-east-1` | AWS region. |
@@ -56,13 +56,13 @@ strata://my-bucket/k3s?data-dir=/var/lib/strata&service-name=kine.kube-system
 **Three-node cluster (manual peer config):**
 ```
 # node-a
-strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-a&peer-listen=0.0.0.0:2380&advertise-peer=node-a.internal:2380
+strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-a&peer-listen=0.0.0.0:3380&advertise-peer=node-a.internal:3380
 
 # node-b
-strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-b&peer-listen=0.0.0.0:2380&advertise-peer=node-b.internal:2380
+strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-b&peer-listen=0.0.0.0:3380&advertise-peer=node-b.internal:3380
 
 # node-c
-strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-c&peer-listen=0.0.0.0:2380&advertise-peer=node-c.internal:2380
+strata://my-bucket/k3s?data-dir=/var/lib/strata&node-id=node-c&peer-listen=0.0.0.0:3380&advertise-peer=node-c.internal:3380
 ```
 
 ## AWS Credentials

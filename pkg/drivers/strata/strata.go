@@ -13,12 +13,12 @@
 //
 //	data-dir            Local storage directory (default: /var/lib/strata)
 //	node-id             Stable unique node ID (default: hostname)
-//	peer-listen         gRPC listen address for WAL streaming, e.g. 0.0.0.0:2380
+//	peer-listen         gRPC listen address for WAL streaming, e.g. 0.0.0.0:3380
 //	                    Required to enable multi-node mode (set automatically
 //	                    when service-name is provided).
 //	advertise-peer      Advertised peer address (default: peer-listen value).
 //	                    Set automatically when service-name is provided.
-//	peer-port           Peer gRPC port used by service-name auto-config (default: 2380)
+//	peer-port           Peer gRPC port used by service-name auto-config (default: 3380)
 //	service-name        Kubernetes headless service name. When set, enables
 //	                    multi-node mode automatically: peer-listen is set to
 //	                    0.0.0.0:<peer-port> and advertise-peer is set to
@@ -41,7 +41,7 @@
 //
 // Three-node cluster:
 //
-//	strata://my-bucket/prefix?data-dir=/var/lib/strata&node-id=node-a&peer-listen=0.0.0.0:2380&advertise-peer=node-a.internal:2380
+//	strata://my-bucket/prefix?data-dir=/var/lib/strata&node-id=node-a&peer-listen=0.0.0.0:3380&advertise-peer=node-a.internal:3380
 package strata
 
 import (
@@ -119,7 +119,7 @@ func parseConfig(ctx context.Context, dsn string) (*strata.Config, error) {
 
 	peerPort := q.Get("peer-port")
 	if peerPort == "" {
-		peerPort = "2380"
+		peerPort = "3380"
 	}
 
 	// service-name enables multi-node mode without manual peer address
