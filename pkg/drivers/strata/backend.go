@@ -124,6 +124,7 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 	errCh := make(chan error, 1)
 	eventCh := make(chan []*kserver.Event, 64)
 
+	fmt.Println("strata-kine", revision, curRev, compactRev)
 	if revision > 0 && revision < compactRev {
 		errCh <- kserver.ErrCompacted
 		close(errCh)
