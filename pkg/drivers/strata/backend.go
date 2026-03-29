@@ -124,8 +124,10 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 	errCh := make(chan error, 1)
 	eventCh := make(chan []*kserver.Event, 64)
 
+	// 41771 41770 40920
 	fmt.Println("strata-kine", revision, curRev, compactRev)
 	if revision > 0 && revision < compactRev {
+		fmt.Println("strata-kine ErrCompacted", revision, curRev, compactRev)
 		errCh <- kserver.ErrCompacted
 		close(errCh)
 		close(eventCh)
@@ -135,6 +137,7 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 	go func() {
 		defer close(eventCh)
 		defer close(errCh)
+		fmt.Println("start watching", revision, curRev, compactRev)
 		ch, err := b.node.Watch(ctx, key, revision)
 		if err != nil {
 			errCh <- fmt.Errorf("strata watch: %w", err)
