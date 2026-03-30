@@ -2,6 +2,7 @@ package strata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -136,7 +137,11 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 		defer close(errCh)
 		ch, err := b.node.Watch(ctx, key, revision)
 		if err != nil {
-			errCh <- fmt.Errorf("strata watch: %w", err)
+			if errors.Is(err, strata.ErrCompacted) {
+				errCh <- kserver.ErrCompacted
+			} else {
+				errCh <- fmt.Errorf("strata watch: %w", err)
+			}
 			return
 		}
 		for ev := range ch {
