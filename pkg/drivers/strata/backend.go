@@ -48,12 +48,13 @@ func (b *backend) CurrentRevision(_ context.Context) (int64, error) {
 	return b.node.CurrentRevision(), nil
 }
 
-func (b *backend) Get(_ context.Context, key, _ string, _, revision int64, keysOnly bool) (int64, *kserver.KeyValue, error) {
+func (b *backend) Get(ctx context.Context, key, _ string, _, revision int64, keysOnly bool) (int64, *kserver.KeyValue, error) {
 	curRev := b.node.CurrentRevision()
 	if revision > 0 && revision > curRev {
 		return curRev, nil, kserver.ErrFutureRev
 	}
-	kv, err := b.node.Get(key)
+
+	kv, err := b.node.LinearizableGet(ctx, key)
 	if err != nil {
 		return curRev, nil, err
 	}
@@ -76,12 +77,12 @@ func (b *backend) Delete(ctx context.Context, key string, revision int64) (int64
 	return newRev, toServerKV(oldKV, false), deleted, nil
 }
 
-func (b *backend) List(_ context.Context, prefix, startKey string, limit, revision int64, keysOnly bool) (int64, []*kserver.KeyValue, error) {
+func (b *backend) List(ctx context.Context, prefix, startKey string, limit, revision int64, keysOnly bool) (int64, []*kserver.KeyValue, error) {
 	curRev := b.node.CurrentRevision()
 	if revision > 0 && revision > curRev {
 		return curRev, nil, kserver.ErrFutureRev
 	}
-	kvs, err := b.node.List(prefix)
+	kvs, err := b.node.LinearizableList(ctx, prefix)
 	if err != nil {
 		return curRev, nil, err
 	}
@@ -98,12 +99,12 @@ func (b *backend) List(_ context.Context, prefix, startKey string, limit, revisi
 	return curRev, out, nil
 }
 
-func (b *backend) Count(_ context.Context, prefix, startKey string, revision int64) (int64, int64, error) {
+func (b *backend) Count(ctx context.Context, prefix, startKey string, revision int64) (int64, int64, error) {
 	curRev := b.node.CurrentRevision()
 	if revision > 0 && revision > curRev {
 		return curRev, 0, kserver.ErrFutureRev
 	}
-	count, err := b.node.Count(prefix)
+	count, err := b.node.LinearizableCount(ctx, prefix)
 	if err != nil {
 		return curRev, 0, err
 	}
