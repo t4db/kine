@@ -59,8 +59,8 @@ import (
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/k3s-io/kine/pkg/drivers"
 	kserver "github.com/k3s-io/kine/pkg/server"
-	"github.com/makhov/strata"
-	straobj "github.com/makhov/strata/pkg/object"
+	"github.com/strata-db/strata"
+	straobj "github.com/strata-db/strata/pkg/object"
 	"os"
 )
 

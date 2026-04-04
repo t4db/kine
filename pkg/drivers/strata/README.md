@@ -1,6 +1,6 @@
 # Strata Driver for Kine
 
-Backs kine with [Strata](https://github.com/makhov/strata) — an embeddable,
+Backs kine with [Strata](https://github.com/strata-db/strata) — an embeddable,
 S3-durable key-value store. Strata handles WAL management, periodic
 checkpoints, and leader election internally, so kine's own leader-election
 path is bypassed (`leaderElect=false`).

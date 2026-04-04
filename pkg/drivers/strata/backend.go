@@ -9,8 +9,8 @@ import (
 	"time"
 
 	kserver "github.com/k3s-io/kine/pkg/server"
-	"github.com/makhov/strata"
 	"github.com/sirupsen/logrus"
+	"github.com/strata-db/strata"
 )
 
 // backend implements kine's server.Backend using a *strata.Node.
