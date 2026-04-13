@@ -1,4 +1,4 @@
-package strata
+package t4
 
 import (
 	"context"
@@ -10,15 +10,15 @@ import (
 
 	kserver "github.com/k3s-io/kine/pkg/server"
 	"github.com/sirupsen/logrus"
-	"github.com/strata-db/strata"
+	"github.com/t4db/t4"
 )
 
-// backend implements kine's server.Backend using a *strata.Node.
+// backend implements kine's server.Backend using a *t4.Node.
 type backend struct {
-	node *strata.Node
+	node *t4.Node
 }
 
-// Start blocks until the strata node is ready to serve writes, retrying
+// Start blocks until the t4 node is ready to serve writes, retrying
 // with backoff for up to 60 seconds. This guards against kine's health-check
 // write firing before a large S3 checkpoint restore has finished.
 func (b *backend) Start(ctx context.Context) error {
@@ -29,13 +29,13 @@ func (b *backend) Start(ctx context.Context) error {
 	deadline := time.Now().Add(retryTimeout)
 	for {
 		_, err := b.node.Create(ctx, "/kine/ready", []byte("1"), 0)
-		if err == nil || err == strata.ErrKeyExists {
+		if err == nil || err == t4.ErrKeyExists {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("strata: backend not ready after %s: %w", retryTimeout, err)
+			return fmt.Errorf("t4: backend not ready after %s: %w", retryTimeout, err)
 		}
-		logrus.Warnf("strata: backend not yet ready (%v), retrying...", err)
+		logrus.Warnf("t4: backend not yet ready (%v), retrying...", err)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -63,7 +63,7 @@ func (b *backend) Get(ctx context.Context, key, _ string, _, revision int64, key
 
 func (b *backend) Create(ctx context.Context, key string, value []byte, lease int64) (int64, error) {
 	rev, err := b.node.Create(ctx, key, value, lease)
-	if err == strata.ErrKeyExists {
+	if err == t4.ErrKeyExists {
 		return 0, kserver.ErrKeyExists
 	}
 	return rev, err
@@ -138,10 +138,10 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 		defer close(errCh)
 		ch, err := b.node.Watch(ctx, key, revision)
 		if err != nil {
-			if errors.Is(err, strata.ErrCompacted) {
+			if errors.Is(err, t4.ErrCompacted) {
 				errCh <- kserver.ErrCompacted
 			} else {
-				errCh <- fmt.Errorf("strata watch: %w", err)
+				errCh <- fmt.Errorf("t4 watch: %w", err)
 			}
 			return
 		}
@@ -183,7 +183,7 @@ func (b *backend) WaitForSyncTo(revision int64) {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-func toServerKV(kv *strata.KeyValue, keysOnly bool) *kserver.KeyValue {
+func toServerKV(kv *t4.KeyValue, keysOnly bool) *kserver.KeyValue {
 	if kv == nil {
 		return nil
 	}
@@ -199,10 +199,10 @@ func toServerKV(kv *strata.KeyValue, keysOnly bool) *kserver.KeyValue {
 	return skv
 }
 
-func toServerEvent(ev *strata.Event) *kserver.Event {
+func toServerEvent(ev *t4.Event) *kserver.Event {
 	se := &kserver.Event{
-		Delete: ev.Type == strata.EventDelete,
-		Create: ev.Type == strata.EventPut && ev.PrevKV == nil,
+		Delete: ev.Type == t4.EventDelete,
+		Create: ev.Type == t4.EventPut && ev.PrevKV == nil,
 		KV:     toServerKV(ev.KV, false),
 	}
 	if ev.PrevKV != nil {

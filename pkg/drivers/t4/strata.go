@@ -1,17 +1,17 @@
-// Package s3 provides a kine backend driver backed by Strata — an embeddable,
-// S3-durable key-value store. Strata handles WAL management, periodic
+// Package s3 provides a kine backend driver backed by t4 — an embeddable,
+// S3-durable key-value store. t4 handles WAL management, periodic
 // checkpoints, leader election, and follower replication; this package wires
 // those capabilities into the kine Backend interface.
 //
 // # DSN format
 //
-//	strata://[bucket[/prefix]][?param=value&...]
+//	t4://[bucket[/prefix]][?param=value&...]
 //
 // When bucket is omitted the node runs in offline mode (local durability only).
 //
 // # Parameters
 //
-//	data-dir            Local storage directory (default: /var/lib/strata)
+//	data-dir            Local storage directory (default: /var/lib/t4)
 //	node-id             Stable unique node ID (default: hostname)
 //	peer-listen         gRPC listen address for WAL streaming, e.g. 0.0.0.0:3380
 //	                    Required to enable multi-node mode (set automatically
@@ -35,16 +35,16 @@
 //
 // Single node, local only:
 //
-//	strata://?data-dir=/var/lib/strata
+//	t4://?data-dir=/var/lib/t4
 //
 // Single node with S3 durability:
 //
-//	strata://my-bucket/prefix?data-dir=/var/lib/strata
+//	t4://my-bucket/prefix?data-dir=/var/lib/t4
 //
 // Three-node cluster:
 //
-//	strata://my-bucket/prefix?data-dir=/var/lib/strata&node-id=node-a&peer-listen=0.0.0.0:3380&advertise-peer=node-a.internal:3380
-package strata
+//	t4://my-bucket/prefix?data-dir=/var/lib/t4&node-id=node-a&peer-listen=0.0.0.0:3380&advertise-peer=node-a.internal:3380
+package t4
 
 import (
 	"context"
@@ -59,47 +59,47 @@ import (
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/k3s-io/kine/pkg/drivers"
 	kserver "github.com/k3s-io/kine/pkg/server"
-	"github.com/strata-db/strata"
-	straobj "github.com/strata-db/strata/pkg/object"
+	"github.com/t4db/t4"
+	t4obj "github.com/t4db/t4/pkg/object"
 	"os"
 )
 
 func init() {
-	drivers.Register("strata", New)
+	drivers.Register("t4", New)
 }
 
-// New is the kine driver constructor for the "strata" scheme.
+// New is the kine driver constructor for the "t4" scheme.
 func New(ctx context.Context, _ *sync.WaitGroup, cfg *drivers.Config) (leaderElect bool, b kserver.Backend, err error) {
 	nodeCfg, err := parseConfig(ctx, cfg.DataSourceName)
 	if err != nil {
-		return false, nil, fmt.Errorf("strata driver: parse DSN: %w", err)
+		return false, nil, fmt.Errorf("t4 driver: parse DSN: %w", err)
 	}
 
-	node, err := strata.Open(*nodeCfg)
+	node, err := t4.Open(*nodeCfg)
 	if err != nil {
-		return false, nil, fmt.Errorf("strata driver: open node: %w", err)
+		return false, nil, fmt.Errorf("t4 driver: open node: %w", err)
 	}
 
-	// leaderElect=false: strata handles its own leader election via S3.
+	// leaderElect=false: t4 handles its own leader election via S3.
 	return false, &backend{node: node}, nil
 }
 
-// parseConfig parses the DataSourceName (everything after "strata://") into a
-// strata.Config.
-func parseConfig(ctx context.Context, dsn string) (*strata.Config, error) {
+// parseConfig parses the DataSourceName (everything after "t4://") into a
+// t4.Config.
+func parseConfig(ctx context.Context, dsn string) (*t4.Config, error) {
 	// Re-add the scheme so url.Parse handles it correctly.
-	u, err := url.Parse("strata://" + dsn)
+	u, err := url.Parse("t4://" + dsn)
 	if err != nil {
 		return nil, err
 	}
 
 	q := u.Query()
 
-	cfg := &strata.Config{
+	cfg := &t4.Config{
 		DataDir: q.Get("data-dir"),
 	}
 	if cfg.DataDir == "" {
-		cfg.DataDir = "/var/lib/strata"
+		cfg.DataDir = "/var/lib/t4"
 	}
 
 	// S3 bucket and prefix from host/path.
@@ -171,7 +171,7 @@ func parseConfig(ctx context.Context, dsn string) (*strata.Config, error) {
 }
 
 // newS3Store creates an object.Store backed by the given S3 bucket.
-func newS3Store(ctx context.Context, bucket, prefix, endpoint, region string) (straobj.Store, error) {
+func newS3Store(ctx context.Context, bucket, prefix, endpoint, region string) (t4obj.Store, error) {
 	opts := []func(*awsconfig.LoadOptions) error{}
 
 	if region != "" {
@@ -201,5 +201,5 @@ func newS3Store(ctx context.Context, bucket, prefix, endpoint, region string) (s
 	}
 
 	client := awss3.NewFromConfig(awsCfg, s3opts...)
-	return straobj.NewS3Store(client, bucket, prefix), nil
+	return t4obj.NewS3Store(client, bucket, prefix), nil
 }
