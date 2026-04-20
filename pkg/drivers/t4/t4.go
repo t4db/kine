@@ -50,18 +50,19 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/k3s-io/kine/pkg/drivers"
 	kserver "github.com/k3s-io/kine/pkg/server"
 	"github.com/t4db/t4"
 	t4obj "github.com/t4db/t4/pkg/object"
-	"os"
 )
 
 func init() {
@@ -172,20 +173,9 @@ func parseConfig(ctx context.Context, dsn string) (*t4.Config, error) {
 
 // newS3Store creates an object.Store backed by the given S3 bucket.
 func newS3Store(ctx context.Context, bucket, prefix, endpoint, region string) (t4obj.Store, error) {
-	opts := []func(*awsconfig.LoadOptions) error{}
-
-	if region != "" {
-		opts = append(opts, awsconfig.WithRegion(region))
-	} else {
-		opts = append(opts, awsconfig.WithRegion("us-east-1"))
-	}
-
-	if endpoint != "" {
-		opts = append(opts, awsconfig.WithEndpointResolverWithOptions(
-			aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-				return aws.Endpoint{URL: endpoint}, nil
-			}),
-		))
+	opts, err := awsConfigOptions(endpoint, region)
+	if err != nil {
+		return nil, err
 	}
 
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, opts...)
@@ -202,4 +192,40 @@ func newS3Store(ctx context.Context, bucket, prefix, endpoint, region string) (t
 
 	client := awss3.NewFromConfig(awsCfg, s3opts...)
 	return t4obj.NewS3Store(client, bucket, prefix), nil
+}
+
+func awsConfigOptions(endpoint, region string) ([]func(*awsconfig.LoadOptions) error, error) {
+	opts := []func(*awsconfig.LoadOptions) error{}
+
+	if region != "" {
+		opts = append(opts, awsconfig.WithRegion(region))
+	} else {
+		opts = append(opts, awsconfig.WithRegion("us-east-1"))
+	}
+
+	if endpoint != "" {
+		opts = append(opts, awsconfig.WithEndpointResolverWithOptions(
+			aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{URL: endpoint}, nil
+			}),
+		))
+	}
+
+	accessKeyID := os.Getenv("T4_S3_ACCESS_KEY_ID")
+	secretAccessKey := os.Getenv("T4_S3_SECRET_ACCESS_KEY")
+	profile := os.Getenv("T4_S3_PROFILE")
+	switch {
+	case accessKeyID != "" && secretAccessKey != "":
+		opts = append(opts, awsconfig.WithCredentialsProvider(
+			awscredentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""),
+		))
+	case accessKeyID != "" || secretAccessKey != "":
+		return nil, fmt.Errorf("T4_S3_ACCESS_KEY_ID and T4_S3_SECRET_ACCESS_KEY must be set together")
+	case profile != "":
+		opts = append(opts, awsconfig.WithSharedConfigProfile(profile))
+	default:
+		return nil, fmt.Errorf("S3 credentials require T4_S3_ACCESS_KEY_ID and T4_S3_SECRET_ACCESS_KEY, or T4_S3_PROFILE to use the default AWS credential chain")
+	}
+
+	return opts, nil
 }

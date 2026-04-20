@@ -73,10 +73,14 @@ t4://my-bucket/k3s?data-dir=/var/lib/t4&node-id=node-c&peer-listen=0.0.0.0:3380&
 
 ## S3 Credentials
 
-Credentials are resolved from environment variables:
+Credentials are resolved from t4-specific environment variables:
 
 - `T4_S3_ACCESS_KEY_ID`
 - `T4_S3_SECRET_ACCESS_KEY`
+
+To use the AWS default credential chain instead, set `T4_S3_PROFILE` to the
+shared AWS profile name to load. Without either the t4 access key variables or
+`T4_S3_PROFILE`, the driver fails before attempting the AWS credential chain.
 
 No credential configuration is needed inside the DSN.
 
