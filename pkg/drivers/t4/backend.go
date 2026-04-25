@@ -136,7 +136,10 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 	go func() {
 		defer close(eventCh)
 		defer close(errCh)
-		ch, err := b.node.Watch(ctx, key, revision)
+		// PrevKV is required: toServerEvent classifies an event as Create if
+		// ev.PrevKV == nil. Without it, every update is reported as a Create
+		// and apiserver's watchCache rejects them as duplicate/out-of-order.
+		ch, err := b.node.Watch(ctx, key, revision, t4.WithPrevKV())
 		if err != nil {
 			if errors.Is(err, t4.ErrCompacted) {
 				errCh <- kserver.ErrCompacted
@@ -145,9 +148,28 @@ func (b *backend) Watch(ctx context.Context, key string, revision int64) kserver
 			}
 			return
 		}
+		// Coalesce events that are already buffered into a single slice send.
+		// kine's server-side already batches, but per-send overhead matters
+		// under churn — and a small batch saves a chan op per event.
+		// Soft cap aligned with the upstream t4.Node.Watch buffer; the drain
+		// loop only takes immediately available events.
+		const maxBatch = 64
 		for ev := range ch {
+			batch := []*kserver.Event{toServerEvent(&ev)}
+		drain:
+			for len(batch) < maxBatch {
+				select {
+				case ev2, ok := <-ch:
+					if !ok {
+						break drain
+					}
+					batch = append(batch, toServerEvent(&ev2))
+				default:
+					break drain
+				}
+			}
 			select {
-			case eventCh <- []*kserver.Event{toServerEvent(&ev)}:
+			case eventCh <- batch:
 			case <-ctx.Done():
 				return
 			}

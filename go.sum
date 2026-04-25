@@ -241,8 +241,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/t4db/t4 v0.17.5 h1:Ujtr69CKby2blJUjO3ZC4ZaKbeIpgOI73tX9IZX4ei0=
-github.com/t4db/t4 v0.17.5/go.mod h1:LoUb4MVgsFQOEuv+wWmiWEeFfOfdw6CRrTU1KWq8a8s=
+github.com/t4db/t4 v0.18.0 h1:3K994sjwdHroh+cR1UxXsUjT92vXgOE1VyOuOwg972w=
+github.com/t4db/t4 v0.18.0/go.mod h1:LoUb4MVgsFQOEuv+wWmiWEeFfOfdw6CRrTU1KWq8a8s=
 github.com/tidwall/btree v1.8.1 h1:27ehoXvm5AG/g+1VxLS1SD3vRhp/H7LuEfwNvddEdmA=
 github.com/tidwall/btree v1.8.1/go.mod h1:jBbTdUWhSZClZWoDg54VnvV7/54modSOzDN7VXftj1A=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75 h1:6fotK7otjonDflCTK0BCfls4SPy3NcCVb5dqqmbRknE=
