@@ -47,34 +47,6 @@ jobs:
             dist/artifacts/kine-*
             dist/artifacts/*.txt
 
-      - name: "Read Vault secrets"
-        if: github.repository_owner == 'k3s-io'
-        uses: rancher-eio/read-vault-secrets@0da85151ad1f19ed7986c41587e45aac1ace74b6 # v3
-        with:
-          secrets: |
-            secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials username | DOCKER_USERNAME ;
-            secret/data/github/repo/${{ github.repository }}/dockerhub/rancher/credentials password | DOCKER_TOKEN ;
-    
-      - name: Set DockerHub repo
-        if: github.repository_owner != 'k3s-io'
-        run: |
-          echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> "$GITHUB_ENV"
-
-      - name: Login to DockerHub with Rancher Secrets
-        if: github.repository_owner == 'k3s-io'
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
-        with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_TOKEN }}
-
-      # For forks, setup DockerHub login with GHA secrets
-      - name: Login to DockerHub with GHA Secrets
-        if: github.repository_owner != 'k3s-io'
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      
       - name: Login to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
@@ -91,8 +63,6 @@ jobs:
           target: multi-arch-package
           push: true
           tags: |
-            ${{ env.DOCKER_USERNAME }}/kine:latest
-            ${{ env.DOCKER_USERNAME }}/kine:${{ github.ref_name }}
             ghcr.io/${{ github.repository_owner }}/kine:latest
             ghcr.io/${{ github.repository_owner }}/kine:${{ github.ref_name }}
       
